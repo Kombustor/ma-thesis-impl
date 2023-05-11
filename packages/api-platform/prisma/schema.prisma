@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // If it's not in node_modules it throws an error
+  output   = "../../../node_modules/@prisma/client-platform"
+}
+
+generator zod {
+  provider = "zod-prisma"
+  output   = "../models"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== Admin Users ==========
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  // accounts      Account[]
+  // sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========== Email Whitelist ==========
+
+model EmailWhitelist {
+  /// @zod.uuid().optional()
+  id    String @id @default(uuid())
+  /// @zod.min(1, {message: "name must not be empty"})
+  name  String
+  /// @zod.email()
+  email String @unique
+
+  createdAt DateTime @default(now())
+}
+
+// ========== Article ==========
+
+model Article {
+  /// @zod.uuid()
+  id                 String   @id @default(uuid())
+  title              String
+  sitename           String
+  author             String
+  date               DateTime
+  source             String   @unique
+  inferenceAvailable Boolean  @default(false)
+
+  indexInStudy Int? @unique
+
+  contents Content[]
+
+  createdAt DateTime @default(now())
+}
+
+model Content {
+  /// @zod.uuid()
+  id                String     @id @default(uuid())
+  indexInArticle    Int
+  // @zod.optional()
+  paragraphIndex    Int?
+  htmlType          HtmlType
+  biased            Boolean?
+  groundTruthBiased Boolean    @default(false)
+  text              String
+  Article           Article?   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId         String?
+  Feedback          Feedback[]
+}
+
+enum HtmlType {
+  H1
+  H2
+  H3
+  SPAN
+}
+
+// ========== Study Participants ==========
+
+enum ParticipantSource {
+  PROLIFIC
+  LOCAL_TESTING
+}
+
+// Prisma doesn't allow leading zeroes in enum values
+enum StudyProgress {
+  START_01
+  DATA_PROCESSING_02
+  QUESTIONS_03
+  INTRO_STUDY_04
+  INTRO_BIAS_05
+  ATTENTION_CHECK_06
+  INTRO_TASK_07
+  ARTICLES_08
+  TRUST_CHECK_09
+  END_10
+}
+
+model Participant {
+  id                     String             @id @default(uuid())
+  attentionCheckFailures Int                @default(0)
+  dataUsableForResearch  Boolean            @default(false)
+  dataProcessingConsent  Boolean            @default(false)
+  feedbackMechanism      FeedbackMechanism?
+
+  source ParticipantSource
+
+  profileId String     @unique
+  sessionId String
+  Answer    Answer[]
+  Feedback  Feedback[]
+
+  progress        ParticipantProgress[]
+  articleProgress Int                   @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+// Keeps track of progress changes
+model ParticipantProgress {
+  id            String        @id @default(uuid())
+  participant   Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId String
+  progress      StudyProgress
+  createdAt     DateTime      @default(now())
+}
+
+model Answer {
+  id                String @id @default(uuid())
+  /// zod.min(1)
+  gender            String
+  /// @zod.min(16).max(100)
+  age               Int
+  /// zod.min(1)
+  educationLevel    String
+  /// zod.min(1)
+  englishLevel      String
+  /// @zod.min(-10).max(10)
+  politicalSpectrum Int
+  /// zod.min(1)
+  newsConsumption   String
+
+  newsOutlets String[]
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId String
+
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id String @id @default(uuid())
+
+  Participant       Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId     String
+  Content           Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  contentId         String
+  // This is the participant's opinion if the sentence is biased or not
+  biased            Boolean
+  // This is whether the decision was made based on seeing classifier highlights or without
+  basedOnClassifier Boolean
+
+  createdAt DateTime @default(now())
+
+  @@unique([participantId, contentId])
+}
+
+model ProlificCompletionCode {
+  id    String                      @id @default(uuid())
+  event ProlificCompletionCodeEvent @unique
+  code  String
+}
+
+enum ProlificCompletionCodeEvent {
+  SUCCESS
+  ATTENTION_CHECK_FAILED
+}
+
+enum FeedbackMechanism {
+  HIGHLIGHTS
+  COMPARISON
+  CONTROL
+}

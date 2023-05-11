@@ -1,8 +1,13 @@
-# Overview
+# Feedback Mechanism Study
 
-This repository contains the implementation, data, and evaluation code for the master thesis "Improving Media Bias Classifiers through Feedback-Driven Data Collection" by Fabian Schliski, submitted to the chair of Data Science at the University of Passau.
+This branch contains the code and data of the Feedback Mechanism Study.
 
-## Branches
+## Content Overview
 
-- `feedback-mechanism-study`: contains the code and data of the Feedback Mechanism Study.
-- `data-collection-platform`: contains the code and data of the Data Collection Platform.
+The content of this repository is organized as follows:
+
+- `apps/inference/`: contains the code of the Content & Inference API.
+- `apps/platform/`: contains the code of the Feedback Mechanism Study.
+- `evaluation/`: contains the data collected during the study and the evaluation notebook.
+- `packages/`: contains the code of the Feedback Mechanism Study API, UI, and utilities.
+- `DEPLOYMENT.md/`: contains instructions on how to deploy the Feedback Mechanism Study.

@@ -1,0 +1,58 @@
+{
+  "name": "web-app",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "FORCE_COLOR=1 turbo run dev --parallel",
+    "dev:inference": "FORCE_COLOR=1 turbo run dev --filter=inference",
+    "dev:platform": "FORCE_COLOR=1 turbo run dev --filter=platform",
+    "build:prepare": "yarn workspaces foreach run build:prepare",
+    "dev:prepare": "yarn workspaces foreach run dev:prepare",
+    "dev:db": "docker run -d --name mbg-db --rm -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -v $(pwd)/devdb:/var/lib/postgresql/data postgres:14",
+    "deploy:platform": "yarn workspace @mbg/api-platform deploy:prepare && yarn workspace platform build",
+    "lint": "npx eslint \"**/*.{ts,tsx,js,jsx}\" --ignore-path .gitignore",
+    "lint:fix": "npx eslint --fix \"**/*.{ts,tsx}\" --ignore-path .gitignore",
+    "format": "prettier --write \"**/*.{js,ts,tsx,md,json}\" --ignore-path .gitignore",
+    "pre-commit": "lint-staged",
+    "postinstall": "husky install",
+    "loc": "git ls-files | xargs npx cloc --include-lang=TypeScript"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^3.4.2",
+    "@mbg/config": "workspace:^",
+    "lint-staged": "latest",
+    "prettier": "latest"
+  },
+  "engines": {
+    "npm": ">=7.0.0",
+    "node": ">=14.0.0"
+  },
+  "packageManager": "yarn@3.2.3",
+  "lint-staged": {
+    "apps/**/*.{js,ts,jsx,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings=0"
+    ],
+    "packages/**/*.{js,ts,jsx,tsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings=0"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ],
+    "**/*.py": [
+      "yarn workspace inference pyright",
+      "yarn workspace inference black",
+      "yarn workspace inference lint"
+    ]
+  },
+  "dependencies": {
+    "husky": "latest",
+    "turbo": "^1.6.3"
+  }
+}
