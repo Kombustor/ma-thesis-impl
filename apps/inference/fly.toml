@@ -1,0 +1,24 @@
+
+app = "inference"
+
+[env]
+  PRIMARY_REGION = "nrt" # The primary region
+  PORT = "9090" # The port which tired-proxy proxies to
+  TIME_TO_SHUTDOWN = "300" # The idle time for tired-proxy in seconds
+
+[[services]]
+  internal_port = 8080 # The port where tired-proxy runs
+  protocol = "tcp"
+  [[services.ports]]
+    handlers = ["http"]
+    port = 8080
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "5s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    restart_limit = 0
+    timeout = 2000
+    tls_skip_verify = true

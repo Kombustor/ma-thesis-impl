@@ -1,0 +1,18 @@
+{
+  "extends": "@mbg/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@prisma/client": ["prisma/client"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "src",
+    "../../packages/api-platform/schemas",
+    "../../packages/api-platform/routers",
+    "../../packages/api-platform/utils"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "wix.vscode-import-cost",
+    "editorconfig.editorconfig",
+    "mikestead.dotenv",
+    "dsznajder.es7-react-js-snippets",
+    "dbaeumer.vscode-eslint",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-python.black-formatter",
+    "ms-python.vscode-pylance"
+  ]
+}

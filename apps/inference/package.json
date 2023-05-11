@@ -1,0 +1,13 @@
+{
+  "name": "inference",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev:prepare": "poetry install && poetry run prepare",
+    "dev": "poetry run inference",
+    "docker:build": "docker build -t inference .",
+    "lint": "poetry run pylint",
+    "pyright": "poetry run pyright",
+    "black": "poetry run black"
+  }
+}

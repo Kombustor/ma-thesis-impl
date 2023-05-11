@@ -1,0 +1,32 @@
+{
+  "name": "@mbg/config",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    ".eslintrc.js"
+  ],
+  "devDependencies": {
+    "@types/node": "17.0.40",
+    "@types/react": "18.0.11",
+    "@types/react-dom": "18.0.5",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "autoprefixer": "^10.4.7",
+    "eslint": "^8.17.0",
+    "eslint-config-next": "^12.2.3",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-react": "7.28.0",
+    "eslint-plugin-tailwindcss": "^3.6.0",
+    "eslint-plugin-unicorn": "^42.0.0",
+    "next": "^12.1.6",
+    "postcss": "^8.4.14",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "tailwindcss": "^3.0.24",
+    "typescript": "^4.7.3"
+  },
+  "dependencies": {
+    "@next/bundle-analyzer": "^12.2.0",
+    "next-transpile-modules": "9.0.0"
+  }
+}

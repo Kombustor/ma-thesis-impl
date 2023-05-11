@@ -1,0 +1,55 @@
+
+app = "newsunfold"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
+  PORT = 8080
+  NEXTAUTH_URL = "https://newsunfold.fly.dev"
+  INFERENCE_URL = "http://[fdaa:0:aa90:0:1::4]:8080"
+  DATABASE_PRIMARY_REGION = "ams"
+
+[build.args]
+  NEXT_PUBLIC_ANALYTICS_ID = "419d4f7b-7987-49fe-904e-a268d1fff44f"
+  NEXT_PUBLIC_ANALYTICS_URL = "https://newsunfold-analytics.fly.dev/newsunfold-analytics.js"
+
+# Prisma DB migration
+[deploy]
+  release_command = "sh -c \"cd /source && yarn && yarn workspace @mbg/api-platform prisma:migrate\""
+  strategy = "bluegreen"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  processes = ["app"]
+  script_checks = []
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "5s"
+    method = "get"
+    path = "/api/health"
+    protocol = "http"
+    restart_limit = 0
+    timeout = 2000
+    tls_skip_verify = false

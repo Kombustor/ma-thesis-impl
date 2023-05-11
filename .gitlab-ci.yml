@@ -1,0 +1,130 @@
+# =============== Configuration ===============
+
+image: node:16-alpine
+
+variables:
+  NEXT_TELEMETRY_DISABLED: 1
+  GIT_SUBMODULE_STRATEGY: normal
+  # Use main branch as fallback cache key
+  # Currently hardcoded to cache index 3 for this reason: https://gitlab.com/gitlab-org/gitlab/-/issues/361235
+  CACHE_FALLBACK_KEY: $CI_DEFAULT_BRANCH-3
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "v3"'
+
+# =============== Stages ===============
+
+stages:
+  - verify
+  - deploy
+
+# =============== Jobs ===============
+
+# ------ Build ------
+
+build:
+  stage: verify
+  interruptible: true
+  cache:
+    - key:
+        files:
+          - yarn.lock
+      paths:
+        - .yarn/cache # for yarn
+    - key: '$CI_COMMIT_REF_SLUG'
+      paths:
+        - node_modules/.cache # for turborepo
+        - apps/*/.next/cache # for NextJS
+  variables:
+    GENERATE_DEFAULT_CONFIG: 1
+    DATABASE_URL: 'postgresql://requiredfor:nextjs@build.io'
+    AUTH_DATABASE_URL: 'postgresql://requiredfor:nextjs@build.io'
+  before_script:
+    # Adds required dependencies for Prisma & Turborepo
+    - apk add --no-cache libc6-compat openssl openssl-dev openssl1.1-compat
+    # Move the turborepo cache folder to /tmp, as it will be deleted by yarn
+    - cp -r node_modules/.cache /tmp/ || echo "No turborepo cache available"
+    - yarn install
+    # After yarn install, move the folder back to node_modules
+    - cp -r /tmp/.cache node_modules/ || echo "No turborepo cache available"
+    - yarn build:prepare
+  script:
+    - yarn build
+
+# # ------ Lint ------
+
+lint:
+  stage: verify
+  interruptible: true
+  cache:
+    - key:
+        files:
+          - yarn.lock
+      paths:
+        - .yarn/cache # for yarn
+  variables:
+    GENERATE_DEFAULT_CONFIG: 1
+  before_script:
+    # Adds required dependencies for Prisma & Turborepo
+    - apk add --no-cache libc6-compat
+    - yarn install
+  script:
+    - yarn lint
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'v3'
+
+lint-python:
+  stage: verify
+  interruptible: true
+  image: python:3.10.6-slim-bullseye
+  cache:
+    - key:
+        files:
+          - apps/inference/poetry.lock
+      paths:
+        - apps/inference/.venv
+  before_script:
+    - pip install poetry==1.2.1
+    - cd apps/inference/ && poetry install
+  script:
+    - poetry run pyright src/inference
+    - poetry run pylint src/inference
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'v3'
+      changes:
+        - 'apps/inference/**/*.py'
+
+# ------ Deploy ------
+
+.deploy-fly:
+  image: alpine
+  stage: deploy
+  before_script:
+    - apk add curl
+    - curl -L https://fly.io/install.sh | sh -s 0.0.456
+
+deploy-platform:
+  extends: .deploy-fly
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'v3'
+      changes:
+        - 'apps/platform/**/*'
+        - 'packages/api-platform/**/*'
+        - 'packages/config/**/*'
+        - 'packages/tsconfig/**/*'
+        - 'packages/ui/**/*'
+        - 'platform.Dockerfile'
+  script:
+    - /root/.fly/bin/flyctl deploy -c apps/platform/fly.toml --dockerfile platform.Dockerfile --auto-confirm --remote-only
+
+deploy-inference:
+  extends: .deploy-fly
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'v3'
+      changes:
+        - 'apps/inference/**/*'
+        - 'inference.Dockerfile'
+  script:
+    - /root/.fly/bin/flyctl deploy -c apps/inference/fly.toml --dockerfile inference.Dockerfile --auto-confirm --remote-only --build-arg HUGGINGFACE_REPO_SLUG="mediabiasgroup/DA-RoBERTa-BABE"
